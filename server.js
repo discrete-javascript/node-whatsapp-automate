@@ -10,7 +10,7 @@ if (fs.existsSync(SESSION_FILE_PATH)) {
 }
 
 const client = new Client({
-    puppeteer: { headless: true },
+    puppeteer: { headless: true, BrowserLaunchOptions: { args: ['--no-sandbox', '--disable-setuid-sandbox'] } },
     session: sessionCfg,
 });
 // You can use an existing session and avoid scanning a QR code by adding a "session" object to the client options.
