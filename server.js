@@ -1,16 +1,23 @@
-const fs = require('fs');
-const { Client, Location, List, Buttons, MessageMedia } = require('./index');
-const qrcode = require('qrcode-terminal');
-const { getSpreadSheetData } = require('./src/googleServices/spreadsheetValues');
+const fs = require("fs");
+const { Client, Location, List, Buttons, MessageMedia } = require("./index");
+const qrcode = require("qrcode-terminal");
+const {
+    getSpreadSheetData,
+} = require("./src/googleServices/spreadsheetValues");
 
-const SESSION_FILE_PATH = './session.json';
+const SESSION_FILE_PATH = "./session.json";
 let sessionCfg;
 if (fs.existsSync(SESSION_FILE_PATH)) {
     sessionCfg = require(SESSION_FILE_PATH);
 }
 
 const client = new Client({
-    puppeteer: { headless: true, BrowserLaunchArgumentOptions: { args: ['--no-sandbox', '--disable-setuid-sandbox'] } },
+    puppeteer: {
+        headless: true,
+        BrowserLaunchArgumentOptions: {
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        },
+    },
     session: sessionCfg,
 });
 // You can use an existing session and avoid scanning a QR code by adding a "session" object to the client options.
@@ -25,14 +32,14 @@ const client = new Client({
 
 client.initialize();
 
-client.on('qr', (qr) => {
+client.on("qr", (qr) => {
     // NOTE: This event will not be fired if a session is specified.
-    console.log('QR RECEIVED', qr);
-    qrcode.generate(qr, {small: true});
+    console.log("QR RECEIVED", qr);
+    qrcode.generate(qr, { small: true });
 });
 
-client.on('authenticated', (session) => {
-    console.log('AUTHENTICATED', session);
+client.on("authenticated", (session) => {
+    console.log("AUTHENTICATED", session);
     sessionCfg = session;
     fs.writeFile(SESSION_FILE_PATH, JSON.stringify(session), function (err) {
         if (err) {
@@ -41,71 +48,71 @@ client.on('authenticated', (session) => {
     });
 });
 
-client.on('auth_failure', (msg) => {
+client.on("auth_failure", (msg) => {
     // Fired if session restore was unsuccessfull
-    console.error('AUTHENTICATION FAILURE', msg);
+    console.error("AUTHENTICATION FAILURE", msg);
 });
 
-client.on('ready', () => {
-    console.log('READY');
+client.on("ready", () => {
+    console.log("READY");
 });
 
-client.on('message', async (msg) => {
-    console.log('MESSAGE RECEIVED', msg);
+client.on("message", async (msg) => {
+    console.log("MESSAGE RECEIVED", msg);
 
-    if (msg.body === '!ping reply') {
+    if (msg.body === "!ping reply") {
         // Send a new message as a reply to the current one
-        msg.reply('pong');
-    } else if (msg.body === '!ping') {
+        msg.reply("pong");
+    } else if (msg.body === "!ping") {
         // Send a new message to the same chat
-        client.sendMessage(msg.from, 'pong');
-    } else if (msg.body.startsWith('!sendto ')) {
+        client.sendMessage(msg.from, "pong");
+    } else if (msg.body.startsWith("!sendto ")) {
         // Direct send a new message to specific id
-        let number = msg.body.split(' ')[1];
+        let number = msg.body.split(" ")[1];
         let messageIndex = msg.body.indexOf(number) + number.length;
         let message = msg.body.slice(messageIndex, msg.body.length);
-        number = number.includes('@c.us') ? number : `${number}@c.us`;
+        number = number.includes("@c.us") ? number : `${number}@c.us`;
         let chat = await msg.getChat();
         chat.sendSeen();
         client.sendMessage(number, message);
-    } else if (msg.body.startsWith('!subject ')) {
+    } else if (msg.body.startsWith("!subject ")) {
         // Change the group subject
         let chat = await msg.getChat();
         if (chat.isGroup) {
             let newSubject = msg.body.slice(9);
             chat.setSubject(newSubject);
         } else {
-            msg.reply('This command can only be used in a group!');
+            msg.reply("This command can only be used in a group!");
         }
-    } else if (msg.body.startsWith('!echo ')) {
+    } else if (msg.body.startsWith("!echo ")) {
         // Replies with the same message
         msg.reply(msg.body.slice(6));
-    } else if (msg.body.startsWith('!desc ')) {
+    } else if (msg.body.startsWith("!desc ")) {
         // Change the group description
         let chat = await msg.getChat();
         if (chat.isGroup) {
             let newDescription = msg.body.slice(6);
             chat.setDescription(newDescription);
         } else {
-            msg.reply('This command can only be used in a group!');
+            msg.reply("This command can only be used in a group!");
         }
-    } else if (msg.body === '!leave') {
+    } else if (msg.body === "!leave") {
         // Leave the group
         let chat = await msg.getChat();
         if (chat.isGroup) {
             chat.leave();
         } else {
-            msg.reply('This command can only be used in a group!');
+            msg.reply("This command can only be used in a group!");
         }
-    } else if (msg.body.startsWith('!join ')) {
-        const inviteCode = msg.body.split(' ')[1];
+    } else if (msg.body.startsWith("!join ")) {
+        const inviteCode = msg.body.split(" ")[1];
         try {
             await client.acceptInvite(inviteCode);
-            msg.reply('Joined the group!');
+            msg.reply("Joined the group!");
         } catch (e) {
-            msg.reply('That invite code seems to be invalid.');
+            msg.reply("That invite code seems to be invalid.");
         }
-    } else if (msg.body === '!groupinfo') {
+    } else if (msg.body === "!groupinfo") {
         let chat = await msg.getChat();
         if (chat.isGroup) {
             msg.reply(`
@@ -117,12 +124,12 @@ client.on('message', async (msg) => {
                 Participant count: ${chat.participants.length}
             `);
         } else {
-            msg.reply('This command can only be used in a group!');
+            msg.reply("This command can only be used in a group!");
         }
-    } else if (msg.body === '!chats') {
+    } else if (msg.body === "!chats") {
         const chats = await client.getChats();
         client.sendMessage(msg.from, `The bot has ${chats.length} chats open.`);
-    } else if (msg.body === '!info') {
+    } else if (msg.body === "!info") {
         let info = client.info;
         client.sendMessage(
             msg.from,
@@ -134,7 +141,7 @@ client.on('message', async (msg) => {
             WhatsApp version: ${info.phone.wa_version}
         `
         );
-    } else if (msg.body === '!mediainfo' && msg.hasMedia) {
+    } else if (msg.body === "!mediainfo" && msg.hasMedia) {
         const attachmentData = await msg.downloadMedia();
         msg.reply(`
             *Media info*
@@ -142,7 +149,7 @@ client.on('message', async (msg) => {
             Filename: ${attachmentData.filename}
             Data (length): ${attachmentData.data.length}
         `);
-    } else if (msg.body === '!quoteinfo' && msg.hasQuotedMsg) {
+    } else if (msg.body === "!quoteinfo" && msg.hasQuotedMsg) {
         const quotedMsg = await msg.getQuotedMessage();
 
         quotedMsg.reply(`
@@ -152,110 +159,108 @@ client.on('message', async (msg) => {
             Timestamp: ${quotedMsg.timestamp}
             Has Media? ${quotedMsg.hasMedia}
         `);
-    } else if (msg.body === '!resendmedia' && msg.hasQuotedMsg) {
+    } else if (msg.body === "!resendmedia" && msg.hasQuotedMsg) {
         const quotedMsg = await msg.getQuotedMessage();
         if (quotedMsg.hasMedia) {
             const attachmentData = await quotedMsg.downloadMedia();
             client.sendMessage(msg.from, attachmentData, {
-                caption: 'Here\'s your requested media.',
+                caption: "Here's your requested media.",
             });
         }
-    } else if (msg.body === '!location') {
+    } else if (msg.body === "!location") {
         msg.reply(
-            new Location(37.422, -122.084, 'Googleplex\nGoogle Headquarters')
+            new Location(37.422, -122.084, "Googleplex\nGoogle Headquarters")
         );
     } else if (msg.location) {
         msg.reply(msg.location);
-    } else if (msg.body.startsWith('!status ')) {
-        const newStatus = msg.body.split(' ')[1];
+    } else if (msg.body.startsWith("!status ")) {
+        const newStatus = msg.body.split(" ")[1];
         await client.setStatus(newStatus);
         msg.reply(`Status was updated to *${newStatus}*`);
-    } else if (msg.body === '!mention') {
+    } else if (msg.body === "!mention") {
         const contact = await msg.getContact();
         const chat = await msg.getChat();
         chat.sendMessage(`Hi @${contact.number}!`, {
             mentions: [contact],
         });
-    } else if (msg.body === '!delete') {
+    } else if (msg.body === "!delete") {
         if (msg.hasQuotedMsg) {
             const quotedMsg = await msg.getQuotedMessage();
             if (quotedMsg.fromMe) {
                 quotedMsg.delete(true);
             } else {
-                msg.reply('I can only delete my own messages');
+                msg.reply("I can only delete my own messages");
             }
         }
-    } else if (msg.body === '!pin') {
+    } else if (msg.body === "!pin") {
         const chat = await msg.getChat();
         await chat.pin();
-    } else if (msg.body === '!archive') {
+    } else if (msg.body === "!archive") {
         const chat = await msg.getChat();
         await chat.archive();
-    } else if (msg.body === '!mute') {
+    } else if (msg.body === "!mute") {
         const chat = await msg.getChat();
         // mute the chat for 20 seconds
         const unmuteDate = new Date();
         unmuteDate.setSeconds(unmuteDate.getSeconds() + 20);
         await chat.mute(unmuteDate);
-    } else if (msg.body === '!typing') {
+    } else if (msg.body === "!typing") {
         const chat = await msg.getChat();
         // simulates typing in the chat
         chat.sendStateTyping();
-    } else if (msg.body === '!recording') {
+    } else if (msg.body === "!recording") {
         const chat = await msg.getChat();
         // simulates recording audio in the chat
         chat.sendStateRecording();
-    } else if (msg.body === '!clearstate') {
+    } else if (msg.body === "!clearstate") {
         const chat = await msg.getChat();
         // stops typing or recording in the chat
         chat.clearState();
-    } else if (msg.body === '!jumpto') {
+    } else if (msg.body === "!jumpto") {
         if (msg.hasQuotedMsg) {
             const quotedMsg = await msg.getQuotedMessage();
             client.interface.openChatWindowAt(quotedMsg.id._serialized);
         }
-    } else if (msg.body === '!buttons') {
+    } else if (msg.body === "!buttons") {
         let button = new Buttons(
-            'Button body',
-            [{ body: 'bt1' }, { body: 'bt2' }, { body: 'bt3' }],
-            'title',
-            'footer'
+            "Button body",
+            [{ body: "bt1" }, { body: "bt2" }, { body: "bt3" }],
+            "title",
+            "footer"
         );
         client.sendMessage(msg.from, button);
-    } else if (msg.body === '!list') {
+    } else if (msg.body === "!list") {
         let sections = [
             {
-                title: 'sectionTitle',
+                title: "sectionTitle",
                 rows: [
-                    { title: 'ListItem1', description: 'desc' },
-                    { title: 'ListItem2' },
+                    { title: "ListItem1", description: "desc" },
+                    { title: "ListItem2" },
                 ],
             },
         ];
         let list = new List(
-            'List body',
-            'btnText',
+            "List body",
+            "btnText",
             sections,
-            'Title',
-            'footer'
+            "Title",
+            "footer"
         );
         client.sendMessage(msg.from, list);
-    } else if (msg.body === '!supriseme') {
+    } else if (msg.body === "!supriseme") {
         const media = await MessageMedia.fromUrl(
-            'https://i.picsum.photos/id/512/200/300.jpg?hmac=la5xkVbvHxjdyuCGyQl9H0Hhom_c8BN-5heSmUIPUzE'
+            "https://i.picsum.photos/id/512/200/300.jpg?hmac=la5xkVbvHxjdyuCGyQl9H0Hhom_c8BN-5heSmUIPUzE"
         );
 
         await client.sendMessage(msg.from, media, {
-            caption: 'Dont know',
+            caption: "Dont know",
         });
-    } else if (msg.body === '!sendprices') {
+    } else if (msg.body === "!sendprices") {
         const fishInventory = await getSpreadSheetData();
-        console.log('fishInventory.values', fishInventory.values);
+        console.log("fishInventory.values", fishInventory.values);
         const fishPrices = fishInventory.values.slice(1).map(async (row) => {
-            const media = await MessageMedia.fromUrl(
-                row[3]
-            );
-    
+            const media = await MessageMedia.fromUrl(row[3]);
+
             await client.sendMessage(msg.from, media, {
                 caption: `${row[0]} - ${row[1]} - ${row[2]} - ${row[4]} - ${row[5]} - ${row[6]}`,
             });
@@ -264,14 +269,14 @@ client.on('message', async (msg) => {
     }
 });
 
-client.on('message_create', (msg) => {
+client.on("message_create", (msg) => {
     // Fired on all message creations, including your own
     if (msg.fromMe) {
         // do stuff here
     }
 });
 
-client.on('message_revoke_everyone', async (after, before) => {
+client.on("message_revoke_everyone", async (after, before) => {
     // Fired whenever a message is deleted by anyone (including you)
     console.log(after); // message after it was deleted.
     if (before) {
@@ -279,12 +284,12 @@ client.on('message_revoke_everyone', async (after, before) => {
     }
 });
 
-client.on('message_revoke_me', async (msg) => {
+client.on("message_revoke_me", async (msg) => {
     // Fired whenever a message is only deleted in your own view.
     console.log(msg.body); // message before it was deleted.
 });
 
-client.on('message_ack', (msg, ack) => {
+client.on("message_ack", (msg, ack) => {
     /*
         == ACK VALUES ==
         ACK_ERROR: -1
@@ -300,33 +305,33 @@ client.on('message_ack', (msg, ack) => {
     }
 });
 
-client.on('group_join', (notification) => {
+client.on("group_join", (notification) => {
     // User has joined or been added to the group.
-    console.log('join', notification);
-    notification.reply('User joined.');
+    console.log("join", notification);
+    notification.reply("User joined.");
 });
 
-client.on('group_leave', (notification) => {
+client.on("group_leave", (notification) => {
     // User has left or been kicked from the group.
-    console.log('leave', notification);
-    notification.reply('User left.');
+    console.log("leave", notification);
+    notification.reply("User left.");
 });
 
-client.on('group_update', (notification) => {
+client.on("group_update", (notification) => {
     // Group picture, subject or description has been updated.
-    console.log('update', notification);
+    console.log("update", notification);
 });
 
-client.on('change_battery', (batteryInfo) => {
+client.on("change_battery", (batteryInfo) => {
     // Battery percentage for attached device has changed
     const { battery, plugged } = batteryInfo;
     console.log(`Battery: ${battery}% - Charging? ${plugged}`);
 });
 
-client.on('change_state', (state) => {
-    console.log('CHANGE STATE', state);
+client.on("change_state", (state) => {
+    console.log("CHANGE STATE", state);
 });
 
-client.on('disconnected', (reason) => {
-    console.log('Client was logged out', reason);
+client.on("disconnected", (reason) => {
+    console.log("Client was logged out", reason);
 });
